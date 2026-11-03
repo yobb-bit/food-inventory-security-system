@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Inventory - All HTTP Methods</title>
+</head>
+<body>
+  <h1>Inventory (GET / POST / PUT / DELETE)</h1>
+
+  <ul id="inventoryList">
+    <li><em>Click "GET all items" to load inventory.</em></li>
+  </ul>
+  <button onclick="loadInventory()">GET all items</button>
+
+  <h2>Add Item (POST)</h2>
+  <input id="nameInput" placeholder="Name">
+  <input id="quantityInput" placeholder="Quantity" type="number">
+  <input id="priceInput" placeholder="Price" type="number">
+  <br><br>
+  <label>Date Received: <input id="dateReceivedInput" type="date"></label>
+  <br><br>
+  <label>Date Consumed: <input id="dateConsumedInput" type="date"></label>
+  <br><br>
+  <button onclick="addItem()">Add</button>
+
+  <h2>Update Item (PUT)</h2>
+  <input id="updateId" placeholder="ID to update" type="number">
+  <input id="updateName" placeholder="New name">
+  <input id="updateQty" placeholder="New quantity" type="number">
+  <input id="updatePrice" placeholder="New price" type="number">
+  <br><br>
+  <label>Date Received: <input id="updateDateReceived" type="date"></label>
+  <br><br>
+  <label>Date Consumed: <input id="updateDateConsumed" type="date"></label>
+  <br><br>
+  <button onclick="updateItem()">Update</button>
+
+  <h2>Delete Item (DELETE)</h2>
+  <input id="deleteId" placeholder="ID to delete" type="number">
+  <button onclick="deleteItem()">Delete</button>
+
+  <script src="apiClient.js"></script>
+  <script>
+    const api = new APIClient("http://localhost:3000");
+
+    // GET
+    async function loadInventory() {
+      const data = await api.get("/api/inventory");
+      const list = document.getElementById("inventoryList");
+      list.innerHTML = "";
+      data.forEach(i => {
+        const li = document.createElement("li");
+        li.textContent = `#${i.id} - ${i.name} - ${i.quantity} pcs - $${i.price} | Received: ${i.dateReceived || "N/A"} | Consumed: ${i.dateConsumed || "N/A"}`;
+        list.appendChild(li);
+      });
+    }
+
+    // POST
+    async function addItem() {
+      const name = document.getElementById("nameInput").value;
+      const quantity = parseInt(document.getElementById("quantityInput").value);
+      const price = parseFloat(document.getElementById("priceInput").value);
+      const dateReceived = document.getElementById("dateReceivedInput").value;
+      const dateConsumed = document.getElementById("dateConsumedInput").value;
+
+      await api.post("/api/inventory", { name, quantity, price, dateReceived, dateConsumed });
+      loadInventory();
+    }
+
+    // PUT
+    async function updateItem() {
+      const id = document.getElementById("updateId").value;
+      const name = document.getElementById("updateName").value;
+      const quantity = parseInt(document.getElementById("updateQty").value);
+      const price = parseFloat(document.getElementById("updatePrice").value);
+      const dateReceived = document.getElementById("updateDateReceived").value;
+      const dateConsumed = document.getElementById("updateDateConsumed").value;
+
+      await api.put(`/api/inventory/${id}`, { name, quantity, price, dateReceived, dateConsumed });
+      loadInventory();
+    }
+
+    // DELETE
+    async function deleteItem() {
+      const id = document.getElementById("deleteId").value;
+      await api.delete(`/api/inventory/${id}`);
+      loadInventory();
+    }
+  </script>
+</body>
+</html>
