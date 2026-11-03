@@ -5,9 +5,10 @@ Guys, I've already created the three security branches in our GitHub repository.
 
 VERY IMPORTANT GIT RULES:
 
-Work only on your assigned branch (e.g LESTER - RBACH branch only)
+Work only on your assigned branch (e.g LESTER - RBACH branch only) **his git command should look like = ```bash git checkout feature/rbac ```
 
-Do not directly modify main.
+Do not directly modify main. 
+AND MAKE SURE TO PUSH EVERY CHANGES!
 
 **GitHub Repository:**  
 https://github.com/yobb-bit/food-inventory-security-system
