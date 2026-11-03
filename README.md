@@ -2,6 +2,13 @@
 
 Guys, I've already created the three security branches in our GitHub repository. I've also assigned separate branches for our UI/UX and QA members, so you don't need to create your own branches.
 
+
+VERY IMPORTANT GIT RULES:
+
+Work only on your assigned branch (e.g LESTER - RBACH branch only)
+
+Do not directly modify main.
+
 **GitHub Repository:**  
 https://github.com/yobb-bit/food-inventory-security-system
 
