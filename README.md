@@ -85,7 +85,7 @@ Make sure your assigned branch has an asterisk (*) beside it.
 - Improve the login and registration pages.
 - Make the interface responsive and consistent.
 - Display UI elements according to user roles where appropriate.
-- Coordinate with the security members before connecting frontend features to the final API endpoints.
+-  **Coordinate with the security members before connecting frontend features to the final API endpoints.** "THIS IS VERY IMPORTAN"
 
 **Important:** You can start by inspecting the current UI, planning the design, and preparing mockups while the other members work on API security. Implement the final frontend integration once the security changes and API contracts are ready.
 
