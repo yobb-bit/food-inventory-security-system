@@ -2,6 +2,14 @@
 
 Guys, I've already created the three security branches in our GitHub repository. I've also assigned separate branches for our UI/UX and QA members, so you don't need to create your own branches.
 
+
+VERY IMPORTANT GIT RULES:
+
+Work only on your assigned branch (e.g LESTER - RBACH branch only) **his git command should look like = ```bash git checkout feature/rbac ```
+
+Do not directly modify main.
+AND MAKE SURE TO PUSH EVERY CHANGES!
+
 **GitHub Repository:**  
 https://github.com/yobb-bit/food-inventory-security-system
 
@@ -106,15 +114,61 @@ Make sure your assigned branch has an asterisk (*) beside it.
 ### OWEN — UI/UX Design and Frontend Upgrade
 **Branch:** `feature/ui-ux`
 
-- Inspect the existing frontend and understand its current design.
-- Improve the overall appearance and usability of the application.
-- Upgrade the dashboard, navigation, inventory tables, and forms.
-- Improve the login and registration pages.
-- Make the interface responsive and consistent.
-- Display UI elements according to user roles where appropriate.
-- Coordinate with the security members before connecting frontend features to the final API endpoints.
+### IMPORTANT NOTE FOR MEMBER 4 — UI/UX + API INTEGRATION
 
-**Important:** You can start by inspecting the current UI, planning the design, and preparing mockups while the other members work on API security. Implement the final frontend integration once the security changes and API contracts are ready.
+Your responsibility is not only to improve the UI/UX but also to connect the frontend to our existing backend API endpoints.
+
+We need a fully functional frontend, not just a visual redesign.
+
+**1. Understand the existing project first**
+- Inspect the existing frontend and backend structure.
+- Understand how the current frontend communicates with the backend.
+- Identify existing API endpoints and how they are used.
+- Preserve existing functionality. Do not rebuild the application from scratch.
+
+**2. API Integration**
+- Connect frontend forms, buttons, tables, and other components to the actual backend API endpoints.
+- Implement API requests for login, logout, inventory retrieval, inventory creation, updating, and deletion, according to the endpoints available in the backend.
+- Use a centralized API service file (such as `api.js`) if the existing project architecture supports it.
+- Handle loading states, successful responses, validation errors, and API errors.
+- Do not use hardcoded or fake inventory data as a replacement for real API responses.
+
+**3. JWT Integration**
+- Coordinate with the JWT member.
+- Connect the login form to the actual authentication endpoint.
+- Handle the JWT token according to the agreed authentication design.
+- Include the required authentication credentials or token in protected API requests.
+- Handle expired or invalid tokens appropriately.
+- Do not create a separate authentication system.
+
+**4. RBAC and BOLA Compatibility**
+- Coordinate with the RBAC member to understand the available roles and permissions.
+- Display or hide UI actions depending on the authenticated user's permissions.
+- Make sure unauthorized actions are handled properly by the frontend.
+- Do not implement your own backend authorization logic.
+- Never assume that hiding a button is sufficient security. The backend must enforce permissions and object ownership.
+
+**5. VERY IMPORTANT — DO NOT BREAK EXISTING CODE**
+- Do not unnecessarily modify backend controllers, routes, middleware, or database structures.
+- Do not rename or change API endpoints, HTTP methods, request body formats, or response structures without coordinating with the responsible security member.
+- Do not remove existing functionality just to make the new UI easier to implement.
+- Do not overwrite another member's security implementation.
+- If an API endpoint is missing or not yet finished, coordinate with the responsible member instead of inventing a replacement.
+- Keep your work on `feature/ui-ux` only.
+
+
+
+**7. Documentation**
+Provide:
+- List of frontend files modified.
+- List of API endpoints connected.
+- Explanation of how the frontend handles JWT authentication.
+- Explanation of how the UI responds to RBAC permissions.
+- Any API integration issues that need to be resolved.
+
+**FINAL GOAL:** The upgraded frontend must work with our actual backend, database, JWT authentication, RBAC permissions, and BOLA protection. Do not sacrifice existing functionality for visual improvements.
+
+If you need to change a shared backend file, discuss it with the responsible member first.
 
 ### FAITH — QA, Security Testing, and Documentation
 **Branch:** `feature/qa-testing`
@@ -128,6 +182,15 @@ Make sure your assigned branch has an asterisk (*) beside it.
 - Perform regression testing to ensure existing inventory features still work.
 - Record test results, screenshots, and discovered bugs.
 - Prepare project documentation.
+
+   Testing Requirements**
+Before considering your work finished:
+- Test login and logout.
+- Test loading inventory from the actual database through the API.
+- Test creating, updating, and deleting inventory records.
+- Test the frontend with different user roles.
+- Test unauthorized API responses and expired JWT tokens.
+- Verify that existing application features still work.
 
 Suggested documentation files:
 
