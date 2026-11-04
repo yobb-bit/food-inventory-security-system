@@ -35,6 +35,10 @@
                     <span>📦</span> Inventory
                 </a>
 
+                <a href="#supplier-finance" class="nav-link" id="supplierFinanceNav" hidden>
+                    <span>💰</span> Supplier Finance
+                </a>
+
                 <a href="#add-item" class="nav-link" data-admin-only>
                     <span>＋</span> Add Item
                 </a>
@@ -170,6 +174,53 @@
 
                 </div>
 
+            </section>
+
+
+            <!-- SUPPLIER FINANCE ACCESS -->
+            <section id="supplier-finance" class="content-card" hidden>
+                <div class="card-heading">
+                    <div>
+                        <h2>Supplier Finance</h2>
+                        <p id="supplierAccessDescription">View supplier details you are authorized to access.</p>
+                    </div>
+                </div>
+
+                <div id="supplierGrantControls" data-admin-only hidden>
+                    <h3>Grant supplier access</h3>
+                    <p>Select a finance user and the supplier they may view.</p>
+                    <div class="form-grid supplier-access-form">
+                        <div class="form-group">
+                            <label for="grantUserSelect">Finance user</label>
+                            <select id="grantUserSelect"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="grantSupplierSelect">Supplier</label>
+                            <select id="grantSupplierSelect"></select>
+                        </div>
+                        <div class="form-group supplier-grant-action">
+                            <button class="primary-button" type="button" onclick="grantSupplierAccess()">
+                                Grant access
+                            </button>
+                        </div>
+                    </div>
+
+                    <h3>Current access grants</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Supplier</th><th>Finance user</th><th>Action</th></tr></thead>
+                            <tbody id="supplierGrantTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <h3>Suppliers available to this account</h3>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Supplier</th><th>Inventory items</th><th>Items and quantities</th><th>Unit costs</th></tr></thead>
+                        <tbody id="supplierTableBody"></tbody>
+                    </table>
+                </div>
             </section>
 
 
@@ -363,6 +414,7 @@
     <script>
 
         const api = new APIClient("http://localhost:3000");
+        let currentUserRole = "";
 
         if (!api.token) {
             window.location.replace("login.html");
@@ -393,8 +445,10 @@
         async function initializeDashboard() {
             try {
                 const user = await api.get("/api/me");
+                currentUserRole = user.role;
                 document.getElementById("currentUsername").textContent = user.username;
                 document.getElementById("currentRole").textContent = `${user.role} account`;
+                document.querySelector(".user-avatar").textContent = user.username.charAt(0).toUpperCase();
 
                 if (user.role !== "admin") {
                     document.querySelectorAll("[data-admin-only]").forEach(element => {
@@ -402,9 +456,135 @@
                     });
                 }
 
+                if (user.role === "admin" || user.role === "finance") {
+                    document.getElementById("supplierFinanceNav").hidden = false;
+                    document.getElementById("supplier-finance").hidden = false;
+                    document.getElementById("supplierAccessDescription").textContent = user.role === "admin"
+                        ? "Grant finance users access to specific suppliers."
+                        : "Only suppliers explicitly shared with your account appear here.";
+                    await loadSupplierFinance();
+                }
+
                 await loadInventory();
             } catch (error) {
                 handleApiError(error, "Unable to load your account.");
+            }
+        }
+
+        function appendTextCell(row, value) {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            row.appendChild(cell);
+            return cell;
+        }
+
+        async function loadSupplierFinance() {
+            try {
+                const suppliers = await api.get("/api/suppliers");
+                const supplierBody = document.getElementById("supplierTableBody");
+                supplierBody.innerHTML = "";
+
+                suppliers.forEach(supplier => {
+                    const row = document.createElement("tr");
+                    appendTextCell(row, supplier.name);
+                    appendTextCell(row, String(supplier.items.length));
+                    appendTextCell(row, supplier.items.map(item => `${item.name} (${item.quantity} pcs)`).join(", "));
+                    appendTextCell(row, supplier.items.map(item =>
+                        `${item.name}: ${item.supplierCost == null ? "N/A" : "$" + Number(item.supplierCost).toFixed(2)}`
+                    ).join(", "));
+                    supplierBody.appendChild(row);
+                });
+
+                if (suppliers.length === 0) {
+                    const row = document.createElement("tr");
+                    const cell = appendTextCell(row, "No supplier access has been granted to this account.");
+                    cell.colSpan = 4;
+                    supplierBody.appendChild(row);
+                }
+
+                if (currentUserRole === "admin") {
+                    const access = await api.get("/api/admin/supplier-access");
+                    document.getElementById("supplierGrantControls").hidden = false;
+                    populateSelect("grantSupplierSelect", access.suppliers, "Select a supplier");
+                    populateSelect("grantUserSelect", access.users.map(user => ({ value: user.id, label: user.username })), "Select a finance user");
+                    renderSupplierGrants(access.grants);
+                }
+            } catch (error) {
+                handleApiError(error, "Unable to load supplier access.");
+            }
+        }
+
+        function populateSelect(elementId, values, placeholder) {
+            const select = document.getElementById(elementId);
+            select.innerHTML = "";
+            const emptyOption = document.createElement("option");
+            emptyOption.value = "";
+            emptyOption.textContent = placeholder;
+            select.appendChild(emptyOption);
+
+            values.forEach(value => {
+                const option = document.createElement("option");
+                if (typeof value === "string") {
+                    option.value = value;
+                    option.textContent = value;
+                } else {
+                    option.value = value.value;
+                    option.textContent = value.label;
+                }
+                select.appendChild(option);
+            });
+        }
+
+        function renderSupplierGrants(grants) {
+            const body = document.getElementById("supplierGrantTableBody");
+            body.innerHTML = "";
+            grants.forEach(grant => {
+                const row = document.createElement("tr");
+                appendTextCell(row, grant.supplier);
+                appendTextCell(row, grant.username);
+                const actionCell = document.createElement("td");
+                const revokeButton = document.createElement("button");
+                revokeButton.type = "button";
+                revokeButton.className = "danger-button";
+                revokeButton.textContent = "Revoke";
+                revokeButton.addEventListener("click", () => revokeSupplierAccess(grant.id));
+                actionCell.appendChild(revokeButton);
+                row.appendChild(actionCell);
+                body.appendChild(row);
+            });
+
+            if (grants.length === 0) {
+                const row = document.createElement("tr");
+                const cell = appendTextCell(row, "No supplier access grants yet.");
+                cell.colSpan = 3;
+                body.appendChild(row);
+            }
+        }
+
+        async function grantSupplierAccess() {
+            const supplier = document.getElementById("grantSupplierSelect").value;
+            const userId = document.getElementById("grantUserSelect").value;
+            if (!supplier || !userId) {
+                showMessage("Select a supplier and finance user.", false);
+                return;
+            }
+
+            try {
+                await api.post("/api/admin/supplier-access", { supplier, userId: Number(userId) });
+                showMessage(`Access to ${supplier} granted.`);
+                await loadSupplierFinance();
+            } catch (error) {
+                handleApiError(error, "Unable to grant supplier access.");
+            }
+        }
+
+        async function revokeSupplierAccess(grantId) {
+            try {
+                await api.delete(`/api/admin/supplier-access/${grantId}`);
+                showMessage("Supplier access revoked.");
+                await loadSupplierFinance();
+            } catch (error) {
+                handleApiError(error, "Unable to revoke supplier access.");
             }
         }
 
@@ -443,10 +623,12 @@
                     const values = [
                         "#" + item.id,
                         item.name,
-                        item.supplier || "N/A",
+                        item.supplierVisible ? (item.supplier || "N/A") : "Restricted",
                         quantity + " pcs",
                         price.toFixed(2),
-                        item.supplierCost == null ? "N/A" : "$" + Number(item.supplierCost).toFixed(2),
+                        item.supplierVisible
+                            ? (item.supplierCost == null ? "N/A" : "$" + Number(item.supplierCost).toFixed(2))
+                            : "Restricted",
                         item.dateReceived || "N/A",
                         item.dateConsumed || "N/A"
                     ];
@@ -535,6 +717,7 @@
                 showMessage("Inventory item added successfully.");
 
                 await loadInventory();
+                if (currentUserRole === "admin") await loadSupplierFinance();
 
             } catch (error) {
 
@@ -579,6 +762,7 @@
                 showMessage("Inventory item updated successfully.");
 
                 await loadInventory();
+                if (currentUserRole === "admin") await loadSupplierFinance();
 
             } catch (error) {
 

@@ -401,6 +401,19 @@ tbody tr:hover {
     transition: 0.2s;
 }
 
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #dce4dd;
+    border-radius: 7px;
+    background: #fff;
+    font-size: 13px;
+}
+
+.supplier-grant-action {
+    justify-content: flex-end;
+}
+
 .form-group input:focus {
     border-color: #218653;
     box-shadow: 0 0 0 3px rgba(33,134,83,0.1);

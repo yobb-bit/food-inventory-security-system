@@ -20,15 +20,17 @@ Open `http://localhost:3000/` and sign in with one of the demo accounts:
 | --- | --- |
 | Owen | `admin123` |
 | Lester | `staff123` |
+| Axel | `finance123` |
 
 The login page stores the JWT for the current browser tab and sends it with inventory requests.
 
 ### Inventory permissions
 
-- **Admin:** can view, add, update, and delete any inventory item.
-- **Staff:** can view all inventory items and low-stock totals, but cannot add, update, or delete items.
+- **Admin:** can manage inventory and grant finance users access to individual suppliers.
+- **Staff:** can view inventory and low-stock totals, but cannot view supplier names/costs or change records.
+- **Finance:** can view supplier names/costs only for suppliers an admin has shared with that account.
 
-The API enforces these permissions even if a caller bypasses the dashboard controls.
+The API enforces these permissions even if a caller bypasses the dashboard controls. Supplier grants are in-memory for this local demo and reset when the server restarts.
 
 ## 1. Clone the repository
 

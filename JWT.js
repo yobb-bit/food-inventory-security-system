@@ -7,7 +7,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 // Demo accounts for the local class project.
 const users = [
     { id: 1, username: 'Owen', password: bcrypt.hashSync('admin123', 10), role: 'admin' },
-    { id: 2, username: 'Lester', password: bcrypt.hashSync('staff123', 10), role: 'staff' }
+    { id: 2, username: 'Lester', password: bcrypt.hashSync('staff123', 10), role: 'staff' },
+    { id: 3, username: 'Axel', password: bcrypt.hashSync('finance123', 10), role: 'finance' }
 ];
 
 function login(req, res) {
@@ -40,4 +41,8 @@ function authenticate(req, res, next) {
     }
 }
 
-module.exports = { login, authenticate };
+function listUsers() {
+    return users.map(({ id, username, role }) => ({ id, username, role }));
+}
+
+module.exports = { login, authenticate, listUsers };
