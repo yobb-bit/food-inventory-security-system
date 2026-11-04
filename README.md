@@ -7,11 +7,38 @@ VERY IMPORTANT GIT RULES:
 
 Work only on your assigned branch (e.g LESTER - RBACH branch only) **his git command should look like = ```bash git checkout feature/rbac ```
 
-Do not directly modify main. 
+Do not directly modify main.
 AND MAKE SURE TO PUSH EVERY CHANGES!
 
 **GitHub Repository:**  
 https://github.com/yobb-bit/food-inventory-security-system
+
+## Run the UI locally
+
+From the project directory, install dependencies and start the server:
+
+```bash
+npm install
+JWT_SECRET=local-dev-secret npm start
+```
+
+Open `http://localhost:3000/` and sign in with one of the demo accounts:
+
+| Username | Password |
+| --- | --- |
+| Owen | `admin123` |
+| Lester | `staff123` |
+| Axel | `finance123` |
+
+The login page stores the JWT for the current browser tab and sends it with inventory requests.
+
+### Inventory permissions
+
+- **Admin:** can manage inventory and grant finance users access to individual suppliers.
+- **Staff:** can view inventory and low-stock totals, but cannot view supplier names/costs or change records.
+- **Finance:** can view supplier names/costs only for suppliers an admin has shared with that account.
+
+The API enforces these permissions even if a caller bypasses the dashboard controls. Supplier grants are in-memory for this local demo and reset when the server restarts.
 
 ## 1. Clone the repository
 

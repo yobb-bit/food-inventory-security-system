@@ -1,6 +1,17 @@
 class APIClient {
     constructor(baseURL) {
         this.baseURL = baseURL;
+        this.token = sessionStorage.getItem('inventoryToken') || '';
+    }
+
+    setToken(token) {
+        this.token = token;
+        sessionStorage.setItem('inventoryToken', token);
+    }
+
+    clearToken() {
+        this.token = '';
+        sessionStorage.removeItem('inventoryToken');
     }
 
     async request(endpoint, options = {}) {
@@ -8,6 +19,7 @@ class APIClient {
         const config = {
             headers: {
                 'Content-Type': 'application/json',
+                ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
                 ...options.headers,
             },
             ...options,
@@ -16,7 +28,14 @@ class APIClient {
         try {
             const response = await fetch(url, config);
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                let message = `HTTP error! status: ${response.status}`;
+                try {
+                    const body = await response.json();
+                    if (body.message) message = body.message;
+                } catch (_) {}
+                const error = new Error(message);
+                error.status = response.status;
+                throw error;
             }
             return await response.json();
         } catch (error) {

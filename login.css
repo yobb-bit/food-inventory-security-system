@@ -1,0 +1,208 @@
+
+/* GENERAL RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f7f4;
+    min-height: 100vh;
+}
+
+/* MAIN CONTAINER */
+.login-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* LEFT BRAND SECTION */
+.login-brand {
+    width: 45%;
+    background: #176b45;
+    color: white;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    padding: 70px;
+}
+
+.brand-logo {
+    font-size: 55px;
+    margin-bottom: 20px;
+}
+
+.login-brand h1 {
+    font-size: 38px;
+    margin-bottom: 15px;
+}
+
+.login-brand p {
+    font-size: 16px;
+    line-height: 1.8;
+    max-width: 400px;
+    color: #e3f3e8;
+}
+
+.brand-footer {
+    margin-top: 80px;
+    font-size: 12px;
+    color: #c8e5d2;
+}
+
+/* RIGHT LOGIN SECTION */
+.login-form-section {
+    width: 55%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 30px;
+}
+
+/* LOGIN CARD */
+.login-card {
+    width: 100%;
+    max-width: 430px;
+
+    background: white;
+    padding: 40px;
+
+    border-radius: 14px;
+
+    box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+}
+
+/* WELCOME TEXT */
+.welcome-label {
+    color: #218653;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.welcome-text h2 {
+    font-size: 25px;
+    color: #202820;
+    margin-top: 12px;
+    margin-bottom: 10px;
+}
+
+.welcome-text p {
+    color: #777;
+    font-size: 14px;
+    margin-bottom: 30px;
+}
+
+/* INPUT FIELDS */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 9px;
+    color: #333;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 13px;
+
+    border: 1px solid #ddd;
+    border-radius: 7px;
+
+    font-size: 14px;
+    outline: none;
+}
+
+.form-group input:focus {
+    border-color: #218653;
+    box-shadow: 0 0 0 3px rgba(33,134,83,0.1);
+}
+
+/* REMEMBER AND FORGOT PASSWORD */
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    font-size: 12px;
+    margin-bottom: 25px;
+}
+
+.remember {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.form-options a {
+    color: #218653;
+    text-decoration: none;
+}
+
+/* LOGIN BUTTON */
+.login-button {
+    width: 100%;
+    padding: 14px;
+
+    background: #218653;
+    color: white;
+
+    border: none;
+    border-radius: 7px;
+
+    font-size: 15px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.login-button:hover {
+    background: #176b45;
+}
+
+/* FOOTER */
+.login-footer {
+    text-align: center;
+    margin-top: 25px;
+    color: #888;
+    font-size: 12px;
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 768px) {
+
+    .login-container {
+        flex-direction: column;
+    }
+
+    .login-brand,
+    .login-form-section {
+        width: 100%;
+    }
+
+    .login-brand {
+        padding: 35px;
+    }
+
+    .brand-footer {
+        margin-top: 25px;
+    }
+
+    .login-form-section {
+        padding: 25px 15px;
+    }
+
+    .login-card {
+        padding: 25px;
+    }
+}

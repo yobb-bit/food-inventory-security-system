@@ -1,148 +1,219 @@
 const express = require('express');
 const cors = require('cors');
-
+const path = require('path');
+const { login, authenticate, listUsers } = require('./JWT');
 const { ROLES, authorizeRoles } = require('./middleware/rbac');
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(cors());
 app.use(express.json());
 
-// Sample data — now with dateReceived and dateConsumed
+// Serve only the UI files needed for local testing.
+const uiFiles = {
+    '/': 'login.html',
+    '/login.html': 'login.html',
+    '/index.html': 'index.html',
+    '/login.css': 'login.css',
+    '/style.css': 'style.css',
+    '/apiCLient.js': 'apiCLient.js'
+};
+for (const [route, filename] of Object.entries(uiFiles)) {
+    app.get(route, (req, res) => res.sendFile(path.join(__dirname, filename)));
+}
+
+app.post('/api/login', login);
+app.get('/api/me', authenticate, (req, res) => {
+    res.json({ id: req.user.id, username: req.user.username, role: req.user.role });
+});
+
 let inventory = [
-    { id: 1, name: 'Item 1', quantity: 10, price: 29.99, dateReceived: '2026-09-01', dateConsumed: '' },
-    { id: 2, name: 'Item 2', quantity: 5, price: 49.99, dateReceived: '2026-09-05', dateConsumed: '' }
+    { id: 1, owner_id: 1, supplier: 'Fish Supplier', supplierCost: 18.50, name: 'Item 1', quantity: 10, price: 29.99, dateReceived: '2026-09-01', dateConsumed: '' },
+    { id: 2, owner_id: 2, supplier: 'Dairy Supplier', supplierCost: 32.25, name: 'Item 2', quantity: 5, price: 49.99, dateReceived: '2026-09-05', dateConsumed: '' }
 ];
 
+let supplierAccessGrants = [];
+let nextSupplierGrantId = 1;
 
-// GET all items
-app.get('/api/inventory',
-    authorizeRoles(ROLES.ADMIN, ROLES.STAFF),
-    (req, res) => {
-        res.json(inventory);
-    }
-);
+const editableFields = ['name', 'supplier', 'quantity', 'price', 'dateReceived', 'dateConsumed'];
+const requireAdmin = authorizeRoles(ROLES.ADMIN);
+const inventoryReader = authorizeRoles(ROLES.ADMIN, ROLES.STAFF, ROLES.FINANCE);
+const supplierReader = authorizeRoles(ROLES.ADMIN, ROLES.FINANCE);
 
-// GET item by ID
-app.get('/api/inventory/:id',
-    authorizeRoles(ROLES.ADMIN, ROLES.STAFF),
-    (req, res) => {
-        const item = inventory.find(
-            i => i.id === parseInt(req.params.id)
-        );
+function normalizeSupplierName(name) {
+    return String(name || '').trim().toLocaleLowerCase();
+}
 
-        item
-            ? res.json(item)
-            : res.status(404).json({ message: 'Item not found' });
-    }
-);
+function getSupplierNames() {
+    const uniqueSuppliers = new Map();
+    inventory.filter(item => item.supplier).forEach(item => {
+        const key = normalizeSupplierName(item.supplier);
+        if (!uniqueSuppliers.has(key)) uniqueSuppliers.set(key, item.supplier);
+    });
+    return [...uniqueSuppliers.values()];
+}
 
-// POST new item
-app.post('/api/inventory',
-    authorizeRoles(ROLES.ADMIN, ROLES.STAFF),
-    (req, res) => {
-        const newItem = {
-            id: inventory.length + 1,
-            name: req.body.name,
-            quantity: req.body.quantity,
-            price: req.body.price,
-            dateReceived: req.body.dateReceived || '',
-            dateConsumed: req.body.dateConsumed || ''
-        };
+function hasSupplierAccess(user, supplierName) {
+    if (user.role === ROLES.ADMIN) return true;
+    return user.role === ROLES.FINANCE && supplierAccessGrants.some(grant =>
+        grant.userId === Number(user.id) && grant.supplierKey === normalizeSupplierName(supplierName)
+    );
+}
 
-        inventory.push(newItem);
-        res.status(201).json(newItem);
-    }
-);
+function inventoryItemForUser(item, user) {
+    const supplierVisible = hasSupplierAccess(user, item.supplier);
+    return {
+        ...item,
+        supplierVisible,
+        supplier: supplierVisible ? item.supplier : null,
+        supplierCost: supplierVisible ? item.supplierCost : null
+    };
+}
 
-// PUT update item
-app.put('/api/inventory/:id',
-    authorizeRoles(ROLES.ADMIN, ROLES.STAFF),
-    (req, res) => {
-        const item = inventory.find(
-            i => i.id === parseInt(req.params.id)
-        );
+function findItem(req) {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id)) return undefined;
+    return inventory.find(item => item.id === id);
+}
 
-        if (item) {
-            Object.assign(item, req.body);
-            res.json(item);
-        } else {
-            res.status(404).json({ message: 'Item not found' });
-        }
-    }
-);
+function parseSupplierCost(value) {
+    if (value === undefined || value === null || value === '') return null;
+    const cost = Number(value);
+    return Number.isFinite(cost) && cost >= 0 ? cost : NaN;
+}
 
-// DELETE item
-app.delete('/api/inventory/:id',
-    authorizeRoles(ROLES.ADMIN),
-    (req, res) => {
-        const initialLength = inventory.length;
-
-        inventory = inventory.filter(
-            i => i.id !== parseInt(req.params.id)
-        );
-
-        if (inventory.length === initialLength) {
-            return res.status(404).json({
-                message: 'Item not found'
-            });
-        }
-
-        res.json({ message: 'Item deleted' });
-    }
-);
-
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+// All authenticated roles can see inventory levels; supplier fields are filtered per user.
+app.use('/api/inventory', authenticate);
+app.get('/api/inventory', inventoryReader, (req, res) => {
+    res.json(inventory.map(item => inventoryItemForUser(item, req.user)));
 });
 
-
-/*/ GET all items
-app.get('/api/inventory', (req, res) => {
-    res.json(inventory);
+app.get('/api/inventory/:id', inventoryReader, (req, res) => {
+    const item = findItem(req);
+    return item
+        ? res.json(inventoryItemForUser(item, req.user))
+        : res.status(404).json({ message: 'Item not found' });
 });
 
-// GET item by ID
-app.get('/api/inventory/:id', (req, res) => {
-    const item = inventory.find(i => i.id === parseInt(req.params.id));
-    item ? res.json(item) : res.status(404).json({ message: 'Item not found' });
-});
+app.post('/api/inventory', requireAdmin, (req, res) => {
+    const body = req.body || {};
+    const supplierCost = parseSupplierCost(body.supplierCost);
+    if (Number.isNaN(supplierCost)) {
+        return res.status(400).json({ message: 'Supplier cost must be a non-negative number' });
+    }
 
-// POST new item
-app.post('/api/inventory', (req, res) => {
     const newItem = {
-        id: inventory.length + 1,
-        name: req.body.name,
-        quantity: req.body.quantity,
-        price: req.body.price,
-        dateReceived: req.body.dateReceived || '',
-        dateConsumed: req.body.dateConsumed || ''
+        id: inventory.reduce((max, item) => Math.max(max, item.id), 0) + 1,
+        owner_id: req.user.id,
+        supplier: typeof body.supplier === 'string' ? body.supplier.trim() : '',
+        supplierCost,
+        name: body.name,
+        quantity: body.quantity,
+        price: body.price,
+        dateReceived: body.dateReceived || '',
+        dateConsumed: body.dateConsumed || ''
     };
     inventory.push(newItem);
-    res.status(201).json(newItem);
+    return res.status(201).json(newItem);
 });
 
-// PUT update item
-app.put('/api/inventory/:id', (req, res) => {
-    const item = inventory.find(i => i.id === parseInt(req.params.id));
-    if (item) {
-        Object.assign(item, req.body);
-        res.json(item);
-    } else {
-        res.status(404).json({ message: 'Item not found' });
+app.put('/api/inventory/:id', requireAdmin, (req, res) => {
+    const item = findItem(req);
+    if (!item) return res.status(404).json({ message: 'Item not found' });
+
+    const body = req.body || {};
+    const supplierCost = Object.prototype.hasOwnProperty.call(body, 'supplierCost')
+        ? parseSupplierCost(body.supplierCost)
+        : item.supplierCost;
+    if (Number.isNaN(supplierCost)) {
+        return res.status(400).json({ message: 'Supplier cost must be a non-negative number' });
     }
+
+    for (const field of editableFields) {
+        if (!Object.prototype.hasOwnProperty.call(body, field)) continue;
+        if (field === 'supplier') {
+            if (typeof body.supplier === 'string') item.supplier = body.supplier.trim();
+        } else {
+            item[field] = body[field];
+        }
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'supplierCost')) item.supplierCost = supplierCost;
+    return res.json(item);
 });
 
-// DELETE item
-app.delete('/api/inventory/:id', (req, res) => {
-    inventory = inventory.filter(i => i.id !== parseInt(req.params.id));
-    res.json({ message: 'Item deleted' });
+app.delete('/api/inventory/:id', requireAdmin, (req, res) => {
+    const item = findItem(req);
+    if (!item) return res.status(404).json({ message: 'Item not found' });
+    inventory = inventory.filter(candidate => candidate.id !== item.id);
+    return res.json({ message: 'Item deleted' });
 });
 
-// Start server
+app.get('/api/suppliers', authenticate, supplierReader, (req, res) => {
+    const suppliers = getSupplierNames()
+        .filter(name => hasSupplierAccess(req.user, name))
+        .map(name => ({
+            name,
+            items: inventory
+                .filter(item => normalizeSupplierName(item.supplier) === normalizeSupplierName(name))
+                .map(item => ({ id: item.id, name: item.name, quantity: item.quantity, supplierCost: item.supplierCost }))
+        }));
+    return res.json(suppliers);
+});
+
+app.get('/api/suppliers/:supplierName', authenticate, supplierReader, (req, res) => {
+    const supplierName = getSupplierNames().find(name =>
+        normalizeSupplierName(name) === normalizeSupplierName(req.params.supplierName)
+    );
+    if (!supplierName || !hasSupplierAccess(req.user, supplierName)) {
+        return res.status(404).json({ message: 'Supplier not found' });
+    }
+
+    const items = inventory
+        .filter(item => normalizeSupplierName(item.supplier) === normalizeSupplierName(supplierName))
+        .map(item => ({ id: item.id, name: item.name, quantity: item.quantity, supplierCost: item.supplierCost }));
+    return res.json({ name: supplierName, items });
+});
+
+app.get('/api/admin/supplier-access', authenticate, requireAdmin, (req, res) => {
+    const financeUsers = listUsers().filter(user => user.role === ROLES.FINANCE);
+    const grants = supplierAccessGrants.map(grant => ({
+        id: grant.id,
+        supplier: grant.supplierName,
+        userId: grant.userId,
+        username: financeUsers.find(user => user.id === grant.userId)?.username || 'Unknown user'
+    }));
+    return res.json({ suppliers: getSupplierNames(), users: financeUsers, grants });
+});
+
+app.post('/api/admin/supplier-access', authenticate, requireAdmin, (req, res) => {
+    const body = req.body || {};
+    const userId = Number(body.userId);
+    const user = listUsers().find(candidate => candidate.id === userId && candidate.role === ROLES.FINANCE);
+    const supplierName = getSupplierNames().find(name =>
+        normalizeSupplierName(name) === normalizeSupplierName(body.supplier)
+    );
+    if (!user || !supplierName) {
+        return res.status(400).json({ message: 'Choose a valid finance user and supplier' });
+    }
+
+    const supplierKey = normalizeSupplierName(supplierName);
+    const existing = supplierAccessGrants.find(grant => grant.userId === userId && grant.supplierKey === supplierKey);
+    if (existing) return res.json({ message: 'Access already granted', id: existing.id });
+
+    const grant = { id: nextSupplierGrantId++, userId, supplierKey, supplierName };
+    supplierAccessGrants.push(grant);
+    return res.status(201).json({ message: 'Supplier access granted', id: grant.id });
+});
+
+app.delete('/api/admin/supplier-access/:id', authenticate, requireAdmin, (req, res) => {
+    const grantId = Number(req.params.id);
+    const grant = supplierAccessGrants.find(item => item.id === grantId);
+    if (!grant) return res.status(404).json({ message: 'Supplier access grant not found' });
+    supplierAccessGrants = supplierAccessGrants.filter(item => item.id !== grantId);
+    return res.json({ message: 'Supplier access revoked' });
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
-*/

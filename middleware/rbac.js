@@ -1,7 +1,8 @@
 
 const ROLES = {
     ADMIN: 'admin',
-    STAFF: 'staff'
+    STAFF: 'staff',
+    FINANCE: 'finance'
 };
 
 const authorizeRoles = (...allowedRoles) => {

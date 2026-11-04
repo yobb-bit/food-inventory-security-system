@@ -1,90 +1,814 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Inventory - All HTTP Methods</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Food Inventory Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Inventory (GET / POST / PUT / DELETE)</h1>
 
-  <ul id="inventoryList">
-    <li><em>Click "GET all items" to load inventory.</em></li>
-  </ul>
-  <button onclick="loadInventory()">GET all items</button>
+    <div class="dashboard-container">
 
-  <h2>Add Item (POST)</h2>
-  <input id="nameInput" placeholder="Name">
-  <input id="quantityInput" placeholder="Quantity" type="number">
-  <input id="priceInput" placeholder="Price" type="number">
-  <br><br>
-  <label>Date Received: <input id="dateReceivedInput" type="date"></label>
-  <br><br>
-  <label>Date Consumed: <input id="dateConsumedInput" type="date"></label>
-  <br><br>
-  <button onclick="addItem()">Add</button>
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
 
-  <h2>Update Item (PUT)</h2>
-  <input id="updateId" placeholder="ID to update" type="number">
-  <input id="updateName" placeholder="New name">
-  <input id="updateQty" placeholder="New quantity" type="number">
-  <input id="updatePrice" placeholder="New price" type="number">
-  <br><br>
-  <label>Date Received: <input id="updateDateReceived" type="date"></label>
-  <br><br>
-  <label>Date Consumed: <input id="updateDateConsumed" type="date"></label>
-  <br><br>
-  <button onclick="updateItem()">Update</button>
+            <div class="brand">
+                <div class="brand-icon">🥬</div>
+                <div>
+                    <h2>FoodStock</h2>
+                    <p>Inventory System</p>
+                </div>
+            </div>
 
-  <h2>Delete Item (DELETE)</h2>
-  <input id="deleteId" placeholder="ID to delete" type="number">
-  <button onclick="deleteItem()">Delete</button>
+            <div class="sidebar-menu">
+                <p class="menu-label">MAIN MENU</p>
 
-  <script src="apiClient.js"></script>
-  <script>
-    const api = new APIClient("http://localhost:3000");
+                <a href="#dashboard" class="nav-link active">
+                    <span>▦</span> Dashboard
+                </a>
 
-    // GET
-    async function loadInventory() {
-      const data = await api.get("/api/inventory");
-      const list = document.getElementById("inventoryList");
-      list.innerHTML = "";
-      data.forEach(i => {
-        const li = document.createElement("li");
-        li.textContent = `#${i.id} - ${i.name} - ${i.quantity} pcs - $${i.price} | Received: ${i.dateReceived || "N/A"} | Consumed: ${i.dateConsumed || "N/A"}`;
-        list.appendChild(li);
-      });
-    }
+                <a href="#inventory" class="nav-link">
+                    <span>📦</span> Inventory
+                </a>
 
-    // POST
-    async function addItem() {
-      const name = document.getElementById("nameInput").value;
-      const quantity = parseInt(document.getElementById("quantityInput").value);
-      const price = parseFloat(document.getElementById("priceInput").value);
-      const dateReceived = document.getElementById("dateReceivedInput").value;
-      const dateConsumed = document.getElementById("dateConsumedInput").value;
+                <a href="#supplier-finance" class="nav-link" id="supplierFinanceNav" hidden>
+                    <span>💰</span> Supplier Finance
+                </a>
 
-      await api.post("/api/inventory", { name, quantity, price, dateReceived, dateConsumed });
-      loadInventory();
-    }
+                <a href="#add-item" class="nav-link" data-admin-only>
+                    <span>＋</span> Add Item
+                </a>
 
-    // PUT
-    async function updateItem() {
-      const id = document.getElementById("updateId").value;
-      const name = document.getElementById("updateName").value;
-      const quantity = parseInt(document.getElementById("updateQty").value);
-      const price = parseFloat(document.getElementById("updatePrice").value);
-      const dateReceived = document.getElementById("updateDateReceived").value;
-      const dateConsumed = document.getElementById("updateDateConsumed").value;
+                <p class="menu-label">ACCOUNT</p>
 
-      await api.put(`/api/inventory/${id}`, { name, quantity, price, dateReceived, dateConsumed });
-      loadInventory();
-    }
+                <a href="login.html" class="nav-link" onclick="logout()">
+                    <span>↪</span> Sign Out
+                </a>
+            </div>
 
-    // DELETE
-    async function deleteItem() {
-      const id = document.getElementById("deleteId").value;
-      await api.delete(`/api/inventory/${id}`);
-      loadInventory();
-    }
-  </script>
+            <div class="sidebar-footer">
+                <p>Food Inventory Management</p>
+                <small>Version 1.0</small>
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+
+            <!-- HEADER -->
+            <header class="topbar">
+
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Welcome to your food inventory management system.</p>
+                </div>
+
+                <div class="user-profile">
+                    <div class="user-avatar">A</div>
+                    <div>
+                        <strong id="currentUsername">Account</strong>
+                        <small id="currentRole">User</small>
+                    </div>
+                </div>
+
+            </header>
+
+
+            <!-- DASHBOARD -->
+            <section id="dashboard">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Overview</h2>
+                        <p>Here's what's happening with your inventory.</p>
+                    </div>
+
+                    <button class="primary-button"
+                            type="button"
+                            onclick="loadInventory()">
+                        ↻ Refresh Inventory
+                    </button>
+                </div>
+
+
+                <!-- STATISTICS -->
+                <div class="stats-grid">
+
+                    <div class="stat-card">
+                        <div class="stat-icon green">📦</div>
+                        <p>Total Products</p>
+                        <h2 id="totalItems">0</h2>
+                        <small>Registered inventory items</small>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon blue">🛒</div>
+                        <p>Total Quantity</p>
+                        <h2 id="totalQuantity">0</h2>
+                        <small>Items currently recorded</small>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon orange">⚠️</div>
+                        <p>Low Stock</p>
+                        <h2 id="lowStock">0</h2>
+                        <small>10 units or fewer</small>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon purple">💰</div>
+                        <p>Inventory Value</p>
+                        <h2 id="totalValue">0.00</h2>
+                        <small>Based on quantity × price</small>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- INVENTORY TABLE -->
+            <section id="inventory" class="content-card">
+
+                <div class="card-heading">
+                    <div>
+                        <h2>Inventory List</h2>
+                        <p>View and monitor your available food supplies.</p>
+                    </div>
+                </div>
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Product Name</th>
+                                <th>Supplier</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Supplier Cost / Unit</th>
+                                <th>Date Received</th>
+                                <th>Date Consumed</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="inventoryTableBody">
+
+                            <tr>
+                                <td colspan="8" class="empty-state">
+                                    Click "Refresh Inventory" to load items.
+                                </td>
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+
+            <!-- SUPPLIER FINANCE ACCESS -->
+            <section id="supplier-finance" class="content-card" hidden>
+                <div class="card-heading">
+                    <div>
+                        <h2>Supplier Finance</h2>
+                        <p id="supplierAccessDescription">View supplier details you are authorized to access.</p>
+                    </div>
+                </div>
+
+                <div id="supplierGrantControls" data-admin-only hidden>
+                    <h3>Grant supplier access</h3>
+                    <p>Select a finance user and the supplier they may view.</p>
+                    <div class="form-grid supplier-access-form">
+                        <div class="form-group">
+                            <label for="grantUserSelect">Finance user</label>
+                            <select id="grantUserSelect"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="grantSupplierSelect">Supplier</label>
+                            <select id="grantSupplierSelect"></select>
+                        </div>
+                        <div class="form-group supplier-grant-action">
+                            <button class="primary-button" type="button" onclick="grantSupplierAccess()">
+                                Grant access
+                            </button>
+                        </div>
+                    </div>
+
+                    <h3>Current access grants</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Supplier</th><th>Finance user</th><th>Action</th></tr></thead>
+                            <tbody id="supplierGrantTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <h3>Suppliers available to this account</h3>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Supplier</th><th>Inventory items</th><th>Items and quantities</th><th>Unit costs</th></tr></thead>
+                        <tbody id="supplierTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+
+            <!-- ADD ITEM -->
+            <section id="add-item" class="content-card" data-admin-only>
+
+                <div class="card-heading">
+                    <div>
+                        <h2>Add New Item</h2>
+                        <p>Register a new food inventory item.</p>
+                    </div>
+                    <span class="method-badge post">POST</span>
+                </div>
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label for="nameInput">Product Name</label>
+                        <input id="nameInput"
+                               type="text"
+                               placeholder="Enter product name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quantityInput">Quantity</label>
+                        <input id="quantityInput"
+                               type="number"
+                               min="0"
+                               placeholder="Enter quantity">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priceInput">Price</label>
+                        <input id="priceInput"
+                               type="number"
+                               min="0"
+                               step="0.01"
+                               placeholder="Enter price">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="supplierInput">Supplier</label>
+                        <input id="supplierInput" type="text" placeholder="Enter supplier name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="supplierCostInput">Supplier Cost per Unit</label>
+                        <input id="supplierCostInput" type="number" min="0" step="0.01" placeholder="Enter unit cost">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dateReceivedInput">Date Received</label>
+                        <input id="dateReceivedInput" type="date">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dateConsumedInput">Date Consumed</label>
+                        <input id="dateConsumedInput" type="date">
+                    </div>
+
+                </div>
+
+                <button class="primary-button"
+                        type="button"
+                        onclick="addItem()">
+                    + Add Inventory Item
+                </button>
+
+            </section>
+
+
+            <!-- UPDATE ITEM -->
+            <section class="content-card" data-admin-only>
+
+                <div class="card-heading">
+                    <div>
+                        <h2>Update Inventory</h2>
+                        <p>Modify the details of an existing item.</p>
+                    </div>
+                    <span class="method-badge put">PUT</span>
+                </div>
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label for="updateId">Item ID</label>
+                        <input id="updateId"
+                               type="number"
+                               placeholder="Enter item ID">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="updateName">New Product Name</label>
+                        <input id="updateName"
+                               placeholder="Enter new name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="updateQty">New Quantity</label>
+                        <input id="updateQty"
+                               type="number"
+                               min="0"
+                               placeholder="Enter new quantity">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="updatePrice">New Price</label>
+                        <input id="updatePrice"
+                               type="number"
+                               min="0"
+                               step="0.01"
+                               placeholder="Enter new price">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="updateSupplier">Supplier</label>
+                        <input id="updateSupplier" type="text" placeholder="Enter supplier name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="updateSupplierCost">Supplier Cost per Unit</label>
+                        <input id="updateSupplierCost" type="number" min="0" step="0.01" placeholder="Enter unit cost">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="updateDateReceived">Date Received</label>
+                        <input id="updateDateReceived" type="date">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="updateDateConsumed">Date Consumed</label>
+                        <input id="updateDateConsumed" type="date">
+                    </div>
+
+                </div>
+
+                <button class="primary-button"
+                        type="button"
+                        onclick="updateItem()">
+                    Save Changes
+                </button>
+
+            </section>
+
+
+            <!-- DELETE ITEM -->
+            <section class="content-card delete-card" data-admin-only>
+
+                <div class="card-heading">
+                    <div>
+                        <h2>Delete Inventory Item</h2>
+                        <p>Remove an item using its inventory ID.</p>
+                    </div>
+                    <span class="method-badge delete">DELETE</span>
+                </div>
+
+                <div class="delete-form">
+
+                    <div class="form-group">
+                        <label for="deleteId">Item ID</label>
+                        <input id="deleteId"
+                               type="number"
+                               placeholder="Enter item ID">
+                    </div>
+
+                    <button class="danger-button"
+                            type="button"
+                            onclick="deleteItem()">
+                        Delete Item
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <footer class="page-footer">
+                FoodStock Inventory Management System by Group 5 © 2026
+            </footer>
+
+            <p id="statusMessage" role="status"></p>
+
+        </main>
+
+    </div>
+
+
+    <!-- API CLIENT -->
+    <script src="apiCLient.js"></script>
+
+    <script>
+
+        const api = new APIClient("http://localhost:3000");
+        let currentUserRole = "";
+
+        if (!api.token) {
+            window.location.replace("login.html");
+        }
+
+        function logout() {
+            api.clearToken();
+        }
+
+        // STATUS MESSAGE
+        function showMessage(message, success = true) {
+            const status = document.getElementById("statusMessage");
+
+            status.textContent = message;
+            status.className = success ? "success-message" : "error-message";
+        }
+
+        function handleApiError(error, fallbackMessage) {
+            console.error(error);
+            if (error.status === 401) {
+                api.clearToken();
+                window.location.replace("login.html");
+                return;
+            }
+            showMessage(error.message || fallbackMessage, false);
+        }
+
+        async function initializeDashboard() {
+            try {
+                const user = await api.get("/api/me");
+                currentUserRole = user.role;
+                document.getElementById("currentUsername").textContent = user.username;
+                document.getElementById("currentRole").textContent = `${user.role} account`;
+                document.querySelector(".user-avatar").textContent = user.username.charAt(0).toUpperCase();
+
+                if (user.role !== "admin") {
+                    document.querySelectorAll("[data-admin-only]").forEach(element => {
+                        element.hidden = true;
+                    });
+                }
+
+                if (user.role === "admin" || user.role === "finance") {
+                    document.getElementById("supplierFinanceNav").hidden = false;
+                    document.getElementById("supplier-finance").hidden = false;
+                    document.getElementById("supplierAccessDescription").textContent = user.role === "admin"
+                        ? "Grant finance users access to specific suppliers."
+                        : "Only suppliers explicitly shared with your account appear here.";
+                    await loadSupplierFinance();
+                }
+
+                await loadInventory();
+            } catch (error) {
+                handleApiError(error, "Unable to load your account.");
+            }
+        }
+
+        function appendTextCell(row, value) {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            row.appendChild(cell);
+            return cell;
+        }
+
+        async function loadSupplierFinance() {
+            try {
+                const suppliers = await api.get("/api/suppliers");
+                const supplierBody = document.getElementById("supplierTableBody");
+                supplierBody.innerHTML = "";
+
+                suppliers.forEach(supplier => {
+                    const row = document.createElement("tr");
+                    appendTextCell(row, supplier.name);
+                    appendTextCell(row, String(supplier.items.length));
+                    appendTextCell(row, supplier.items.map(item => `${item.name} (${item.quantity} pcs)`).join(", "));
+                    appendTextCell(row, supplier.items.map(item =>
+                        `${item.name}: ${item.supplierCost == null ? "N/A" : "$" + Number(item.supplierCost).toFixed(2)}`
+                    ).join(", "));
+                    supplierBody.appendChild(row);
+                });
+
+                if (suppliers.length === 0) {
+                    const row = document.createElement("tr");
+                    const cell = appendTextCell(row, "No supplier access has been granted to this account.");
+                    cell.colSpan = 4;
+                    supplierBody.appendChild(row);
+                }
+
+                if (currentUserRole === "admin") {
+                    const access = await api.get("/api/admin/supplier-access");
+                    document.getElementById("supplierGrantControls").hidden = false;
+                    populateSelect("grantSupplierSelect", access.suppliers, "Select a supplier");
+                    populateSelect("grantUserSelect", access.users.map(user => ({ value: user.id, label: user.username })), "Select a finance user");
+                    renderSupplierGrants(access.grants);
+                }
+            } catch (error) {
+                handleApiError(error, "Unable to load supplier access.");
+            }
+        }
+
+        function populateSelect(elementId, values, placeholder) {
+            const select = document.getElementById(elementId);
+            select.innerHTML = "";
+            const emptyOption = document.createElement("option");
+            emptyOption.value = "";
+            emptyOption.textContent = placeholder;
+            select.appendChild(emptyOption);
+
+            values.forEach(value => {
+                const option = document.createElement("option");
+                if (typeof value === "string") {
+                    option.value = value;
+                    option.textContent = value;
+                } else {
+                    option.value = value.value;
+                    option.textContent = value.label;
+                }
+                select.appendChild(option);
+            });
+        }
+
+        function renderSupplierGrants(grants) {
+            const body = document.getElementById("supplierGrantTableBody");
+            body.innerHTML = "";
+            grants.forEach(grant => {
+                const row = document.createElement("tr");
+                appendTextCell(row, grant.supplier);
+                appendTextCell(row, grant.username);
+                const actionCell = document.createElement("td");
+                const revokeButton = document.createElement("button");
+                revokeButton.type = "button";
+                revokeButton.className = "danger-button";
+                revokeButton.textContent = "Revoke";
+                revokeButton.addEventListener("click", () => revokeSupplierAccess(grant.id));
+                actionCell.appendChild(revokeButton);
+                row.appendChild(actionCell);
+                body.appendChild(row);
+            });
+
+            if (grants.length === 0) {
+                const row = document.createElement("tr");
+                const cell = appendTextCell(row, "No supplier access grants yet.");
+                cell.colSpan = 3;
+                body.appendChild(row);
+            }
+        }
+
+        async function grantSupplierAccess() {
+            const supplier = document.getElementById("grantSupplierSelect").value;
+            const userId = document.getElementById("grantUserSelect").value;
+            if (!supplier || !userId) {
+                showMessage("Select a supplier and finance user.", false);
+                return;
+            }
+
+            try {
+                await api.post("/api/admin/supplier-access", { supplier, userId: Number(userId) });
+                showMessage(`Access to ${supplier} granted.`);
+                await loadSupplierFinance();
+            } catch (error) {
+                handleApiError(error, "Unable to grant supplier access.");
+            }
+        }
+
+        async function revokeSupplierAccess(grantId) {
+            try {
+                await api.delete(`/api/admin/supplier-access/${grantId}`);
+                showMessage("Supplier access revoked.");
+                await loadSupplierFinance();
+            } catch (error) {
+                handleApiError(error, "Unable to revoke supplier access.");
+            }
+        }
+
+
+        // GET - LOAD INVENTORY
+        async function loadInventory() {
+
+            try {
+
+                const data = await api.get("/api/inventory");
+
+                const table = document.getElementById("inventoryTableBody");
+
+                table.innerHTML = "";
+
+                let totalQuantity = 0;
+                let totalValue = 0;
+                let lowStock = 0;
+
+                document.getElementById("totalItems").textContent = data.length;
+
+                data.forEach(item => {
+
+                    const quantity = Number(item.quantity) || 0;
+                    const price = Number(item.price) || 0;
+
+                    totalQuantity += quantity;
+                    totalValue += quantity * price;
+
+                    if (quantity <= 10) {
+                        lowStock++;
+                    }
+
+                    const row = document.createElement("tr");
+
+                    const values = [
+                        "#" + item.id,
+                        item.name,
+                        item.supplierVisible ? (item.supplier || "N/A") : "Restricted",
+                        quantity + " pcs",
+                        price.toFixed(2),
+                        item.supplierVisible
+                            ? (item.supplierCost == null ? "N/A" : "$" + Number(item.supplierCost).toFixed(2))
+                            : "Restricted",
+                        item.dateReceived || "N/A",
+                        item.dateConsumed || "N/A"
+                    ];
+
+                    values.forEach(value => {
+
+                        const cell = document.createElement("td");
+
+                        cell.textContent = value;
+
+                        row.appendChild(cell);
+
+                    });
+
+                    table.appendChild(row);
+
+                });
+
+                if (data.length === 0) {
+
+                    const row = document.createElement("tr");
+                    const cell = document.createElement("td");
+
+                    cell.colSpan = 8;
+                    cell.className = "empty-state";
+                    cell.textContent = "No inventory items found.";
+
+                    row.appendChild(cell);
+                    table.appendChild(row);
+
+                }
+
+                document.getElementById("totalQuantity").textContent = totalQuantity;
+                document.getElementById("lowStock").textContent = lowStock;
+                document.getElementById("totalValue").textContent = totalValue.toFixed(2);
+
+                showMessage("Inventory loaded successfully.");
+
+            } catch (error) {
+
+                handleApiError(error, "Unable to load inventory. Check your server.");
+
+            }
+
+        }
+
+
+        // POST - ADD ITEM
+        async function addItem() {
+
+            try {
+
+                const name = document.getElementById("nameInput").value.trim();
+                const quantity = document.getElementById("quantityInput").value;
+                const price = document.getElementById("priceInput").value;
+                const supplier = document.getElementById("supplierInput").value.trim();
+                const supplierCost = document.getElementById("supplierCostInput").value;
+                const dateReceived = document.getElementById("dateReceivedInput").value;
+                const dateConsumed = document.getElementById("dateConsumedInput").value;
+
+                if (!name || quantity === "" || price === "") {
+                    showMessage("Please complete the required fields.", false);
+                    return;
+                }
+
+                const item = {
+                    name,
+                    supplier,
+                    quantity: Number(quantity),
+                    price: Number(price),
+                    supplierCost: supplierCost === "" ? null : Number(supplierCost),
+                    dateReceived,
+                    dateConsumed
+                };
+
+                await api.post("/api/inventory", item);
+
+                document.getElementById("nameInput").value = "";
+                document.getElementById("quantityInput").value = "";
+                document.getElementById("priceInput").value = "";
+                document.getElementById("supplierInput").value = "";
+                document.getElementById("supplierCostInput").value = "";
+                document.getElementById("dateReceivedInput").value = "";
+                document.getElementById("dateConsumedInput").value = "";
+
+                showMessage("Inventory item added successfully.");
+
+                await loadInventory();
+                if (currentUserRole === "admin") await loadSupplierFinance();
+
+            } catch (error) {
+
+                handleApiError(error, "Unable to add inventory item.");
+
+            }
+
+        }
+
+
+        // PUT - UPDATE ITEM
+        async function updateItem() {
+
+            try {
+
+                const id = document.getElementById("updateId").value;
+                const name = document.getElementById("updateName").value.trim();
+                const quantity = document.getElementById("updateQty").value;
+                const price = document.getElementById("updatePrice").value;
+                const supplier = document.getElementById("updateSupplier").value.trim();
+                const supplierCost = document.getElementById("updateSupplierCost").value;
+                const dateReceived = document.getElementById("updateDateReceived").value;
+                const dateConsumed = document.getElementById("updateDateConsumed").value;
+
+                if (!id || !name || quantity === "" || price === "") {
+                    showMessage("Please complete the update fields.", false);
+                    return;
+                }
+
+                const item = {
+                    name,
+                    supplier,
+                    quantity: Number(quantity),
+                    price: Number(price),
+                    supplierCost: supplierCost === "" ? null : Number(supplierCost),
+                    dateReceived,
+                    dateConsumed
+                };
+
+                await api.put(`/api/inventory/${id}`, item);
+
+                showMessage("Inventory item updated successfully.");
+
+                await loadInventory();
+                if (currentUserRole === "admin") await loadSupplierFinance();
+
+            } catch (error) {
+
+                handleApiError(error, "Unable to update inventory item.");
+
+            }
+
+        }
+
+
+        // DELETE - REMOVE ITEM
+        async function deleteItem() {
+
+            try {
+
+                const id = document.getElementById("deleteId").value;
+
+                if (!id) {
+                    showMessage("Please enter an inventory ID.", false);
+                    return;
+                }
+
+                if (!confirm("Are you sure you want to delete this item?")) {
+                    return;
+                }
+
+                await api.delete(`/api/inventory/${id}`);
+
+                document.getElementById("deleteId").value = "";
+
+                showMessage("Inventory item deleted successfully.");
+
+                await loadInventory();
+
+            } catch (error) {
+
+                handleApiError(error, "Unable to delete inventory item.");
+
+            }
+
+        }
+
+        // LOAD INVENTORY WHEN PAGE OPENS
+        if (api.token) initializeDashboard();
+
+    </script>
+
 </body>
 </html>
