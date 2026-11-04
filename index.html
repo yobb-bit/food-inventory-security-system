@@ -5,6 +5,10 @@
 </head>
 <body>
   <h1>Inventory (GET / POST / PUT / DELETE)</h1>
+  <p>Paste a JWT from your authentication service. The API uses its authenticated user ID to scope inventory records.</p>
+  <label>JWT token: <input id="tokenInput" type="password" placeholder="Bearer token" autocomplete="off"></label>
+  <button onclick="setToken()">Use token</button>
+  <p id="status" role="status"></p>
 
   <ul id="inventoryList">
     <li><em>Click "GET all items" to load inventory.</em></li>
@@ -38,12 +42,29 @@
   <input id="deleteId" placeholder="ID to delete" type="number">
   <button onclick="deleteItem()">Delete</button>
 
-  <script src="apiClient.js"></script>
+  <script src="apiCLient.js"></script>
   <script>
     const api = new APIClient("http://localhost:3000");
 
+    function setToken() {
+      api.setToken(document.getElementById("tokenInput").value);
+      showStatus("Token set for this page session.");
+    }
+
+    function showStatus(message) {
+      document.getElementById("status").textContent = message;
+    }
+
+    async function run(action) {
+      try {
+        await action();
+      } catch (error) {
+        showStatus(error.message);
+      }
+    }
+
     // GET
-    async function loadInventory() {
+    async function loadInventory() { return run(async () => {
       const data = await api.get("/api/inventory");
       const list = document.getElementById("inventoryList");
       list.innerHTML = "";
@@ -52,10 +73,11 @@
         li.textContent = `#${i.id} - ${i.name} - ${i.quantity} pcs - $${i.price} | Received: ${i.dateReceived || "N/A"} | Consumed: ${i.dateConsumed || "N/A"}`;
         list.appendChild(li);
       });
-    }
+      showStatus(`${data.length} item(s) loaded for this account.`);
+    }); }
 
     // POST
-    async function addItem() {
+    async function addItem() { return run(async () => {
       const name = document.getElementById("nameInput").value;
       const quantity = parseInt(document.getElementById("quantityInput").value);
       const price = parseFloat(document.getElementById("priceInput").value);
@@ -64,10 +86,10 @@
 
       await api.post("/api/inventory", { name, quantity, price, dateReceived, dateConsumed });
       loadInventory();
-    }
+    }); }
 
     // PUT
-    async function updateItem() {
+    async function updateItem() { return run(async () => {
       const id = document.getElementById("updateId").value;
       const name = document.getElementById("updateName").value;
       const quantity = parseInt(document.getElementById("updateQty").value);
@@ -77,14 +99,14 @@
 
       await api.put(`/api/inventory/${id}`, { name, quantity, price, dateReceived, dateConsumed });
       loadInventory();
-    }
+    }); }
 
     // DELETE
-    async function deleteItem() {
+    async function deleteItem() { return run(async () => {
       const id = document.getElementById("deleteId").value;
       await api.delete(`/api/inventory/${id}`);
       loadInventory();
-    }
+    }); }
   </script>
 </body>
 </html>

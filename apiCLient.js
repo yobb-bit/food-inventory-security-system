@@ -1,6 +1,11 @@
 class APIClient {
     constructor(baseURL) {
         this.baseURL = baseURL;
+        this.token = '';
+    }
+
+    setToken(token) {
+        this.token = token.trim();
     }
 
     async request(endpoint, options = {}) {
@@ -8,6 +13,7 @@ class APIClient {
         const config = {
             headers: {
                 'Content-Type': 'application/json',
+                ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
                 ...options.headers,
             },
             ...options,
@@ -16,7 +22,12 @@ class APIClient {
         try {
             const response = await fetch(url, config);
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                let message = `HTTP error! status: ${response.status}`;
+                try {
+                    const body = await response.json();
+                    if (body.message) message = body.message;
+                } catch (_) {}
+                throw new Error(message);
             }
             return await response.json();
         } catch (error) {
