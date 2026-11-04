@@ -1,148 +1,88 @@
 const express = require('express');
 const cors = require('cors');
-
+const { login, authenticate } = require('./JWT');
 const { ROLES, authorizeRoles } = require('./middleware/rbac');
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(cors());
 app.use(express.json());
 
-// Sample data — now with dateReceived and dateConsumed
-let inventory = [
-    { id: 1, name: 'Item 1', quantity: 10, price: 29.99, dateReceived: '2026-09-01', dateConsumed: '' },
-    { id: 2, name: 'Item 2', quantity: 5, price: 49.99, dateReceived: '2026-09-05', dateConsumed: '' }
-];
-
-
-// GET all items
-app.get('/api/inventory',
-    authorizeRoles(ROLES.ADMIN, ROLES.STAFF),
-    (req, res) => {
-        res.json(inventory);
-    }
-);
-
-// GET item by ID
-app.get('/api/inventory/:id',
-    authorizeRoles(ROLES.ADMIN, ROLES.STAFF),
-    (req, res) => {
-        const item = inventory.find(
-            i => i.id === parseInt(req.params.id)
-        );
-
-        item
-            ? res.json(item)
-            : res.status(404).json({ message: 'Item not found' });
-    }
-);
-
-// POST new item
-app.post('/api/inventory',
-    authorizeRoles(ROLES.ADMIN, ROLES.STAFF),
-    (req, res) => {
-        const newItem = {
-            id: inventory.length + 1,
-            name: req.body.name,
-            quantity: req.body.quantity,
-            price: req.body.price,
-            dateReceived: req.body.dateReceived || '',
-            dateConsumed: req.body.dateConsumed || ''
-        };
-
-        inventory.push(newItem);
-        res.status(201).json(newItem);
-    }
-);
-
-// PUT update item
-app.put('/api/inventory/:id',
-    authorizeRoles(ROLES.ADMIN, ROLES.STAFF),
-    (req, res) => {
-        const item = inventory.find(
-            i => i.id === parseInt(req.params.id)
-        );
-
-        if (item) {
-            Object.assign(item, req.body);
-            res.json(item);
-        } else {
-            res.status(404).json({ message: 'Item not found' });
-        }
-    }
-);
-
-// DELETE item
-app.delete('/api/inventory/:id',
-    authorizeRoles(ROLES.ADMIN),
-    (req, res) => {
-        const initialLength = inventory.length;
-
-        inventory = inventory.filter(
-            i => i.id !== parseInt(req.params.id)
-        );
-
-        if (inventory.length === initialLength) {
-            return res.status(404).json({
-                message: 'Item not found'
-            });
-        }
-
-        res.json({ message: 'Item deleted' });
-    }
-);
-
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+// Login is public; the token identifies the user and their role.
+app.post('/api/login', login);
+app.get('/api/me', authenticate, (req, res) => {
+    res.json({ id: req.user.id, username: req.user.username, role: req.user.role });
 });
 
+// Every inventory request requires a verified JWT before role checks run.
+app.use('/api/inventory', authenticate);
 
-/*/ GET all items
-app.get('/api/inventory', (req, res) => {
+let inventory = [
+    { id: 1, owner_id: 1, name: 'Item 1', quantity: 10, price: 29.99, dateReceived: '2026-09-01', dateConsumed: '' },
+    { id: 2, owner_id: 2, name: 'Item 2', quantity: 5, price: 49.99, dateReceived: '2026-09-05', dateConsumed: '' }
+];
+
+const editableFields = ['name', 'quantity', 'price', 'dateReceived', 'dateConsumed'];
+const requireAdmin = authorizeRoles(ROLES.ADMIN);
+
+function findItem(req) {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id)) return undefined;
+    return inventory.find(item => item.id === id);
+}
+
+// Staff and admins can view all inventory so staff can monitor stock levels.
+app.get('/api/inventory', authorizeRoles(ROLES.ADMIN, ROLES.STAFF), (req, res) => {
     res.json(inventory);
 });
 
-// GET item by ID
-app.get('/api/inventory/:id', (req, res) => {
-    const item = inventory.find(i => i.id === parseInt(req.params.id));
-    item ? res.json(item) : res.status(404).json({ message: 'Item not found' });
+app.get('/api/inventory/:id', authorizeRoles(ROLES.ADMIN, ROLES.STAFF), (req, res) => {
+    const item = findItem(req);
+    return item
+        ? res.json(item)
+        : res.status(404).json({ message: 'Item not found' });
 });
 
-// POST new item
-app.post('/api/inventory', (req, res) => {
+// Only admins can create records; ownership always comes from the verified token.
+app.post('/api/inventory', requireAdmin, (req, res) => {
+    const body = req.body || {};
     const newItem = {
-        id: inventory.length + 1,
-        name: req.body.name,
-        quantity: req.body.quantity,
-        price: req.body.price,
-        dateReceived: req.body.dateReceived || '',
-        dateConsumed: req.body.dateConsumed || ''
+        id: inventory.reduce((max, item) => Math.max(max, item.id), 0) + 1,
+        owner_id: req.user.id,
+        name: body.name,
+        quantity: body.quantity,
+        price: body.price,
+        dateReceived: body.dateReceived || '',
+        dateConsumed: body.dateConsumed || ''
     };
+
     inventory.push(newItem);
-    res.status(201).json(newItem);
+    return res.status(201).json(newItem);
 });
 
-// PUT update item
-app.put('/api/inventory/:id', (req, res) => {
-    const item = inventory.find(i => i.id === parseInt(req.params.id));
-    if (item) {
-        Object.assign(item, req.body);
-        res.json(item);
-    } else {
-        res.status(404).json({ message: 'Item not found' });
+// Only admins can edit; id and owner_id are deliberately not writable fields.
+app.put('/api/inventory/:id', requireAdmin, (req, res) => {
+    const item = findItem(req);
+    if (!item) return res.status(404).json({ message: 'Item not found' });
+
+    const body = req.body || {};
+    for (const field of editableFields) {
+        if (Object.prototype.hasOwnProperty.call(body, field)) {
+            item[field] = body[field];
+        }
     }
+    return res.json(item);
 });
 
-// DELETE item
-app.delete('/api/inventory/:id', (req, res) => {
-    inventory = inventory.filter(i => i.id !== parseInt(req.params.id));
-    res.json({ message: 'Item deleted' });
+app.delete('/api/inventory/:id', requireAdmin, (req, res) => {
+    const item = findItem(req);
+    if (!item) return res.status(404).json({ message: 'Item not found' });
+
+    inventory = inventory.filter(candidate => candidate.id !== item.id);
+    return res.json({ message: 'Item deleted' });
 });
 
-// Start server
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
-*/
