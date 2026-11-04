@@ -28,30 +28,40 @@ app.use('/api/inventory', authenticate);
 
 // Sample data — now with dateReceived and dateConsumed
 let inventory = [
-    { id: 1, name: 'Item 1', quantity: 10, price: 29.99, dateReceived: '2026-09-01', dateConsumed: '' },
-    { id: 2, name: 'Item 2', quantity: 5, price: 49.99, dateReceived: '2026-09-05', dateConsumed: '' }
+    { id: 1, owner_id: 1, name: 'Item 1', quantity: 10, price: 29.99, dateReceived: '2026-09-01', dateConsumed: '' },
+    { id: 2, owner_id: 2, name: 'Item 2', quantity: 5, price: 49.99, dateReceived: '2026-09-05', dateConsumed: '' }
 ];
+
+const editableFields = ['name', 'quantity', 'price', 'dateReceived', 'dateConsumed'];
+
+function ownedItem(req) {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id)) return undefined;
+    return inventory.find(item => item.id === id && String(item.owner_id) === String(req.user.id));
+}
 
 // GET all items
 app.get('/api/inventory', (req, res) => {
-    res.json(inventory);
+    res.json(inventory.filter(item => String(item.owner_id) === String(req.user.id)));
 });
 
 // GET item by ID
 app.get('/api/inventory/:id', (req, res) => {
-    const item = inventory.find(i => i.id === parseInt(req.params.id));
+    const item = ownedItem(req);
     item ? res.json(item) : res.status(404).json({ message: 'Item not found' });
 });
 
 // POST new item
 app.post('/api/inventory', (req, res) => {
+    const body = req.body || {};
     const newItem = {
-        id: inventory.length + 1,
-        name: req.body.name,
-        quantity: req.body.quantity,
-        price: req.body.price,
-        dateReceived: req.body.dateReceived || '',
-        dateConsumed: req.body.dateConsumed || ''
+        id: inventory.reduce((max, item) => Math.max(max, item.id), 0) + 1,
+        owner_id: req.user.id,
+        name: body.name,
+        quantity: body.quantity,
+        price: body.price,
+        dateReceived: body.dateReceived || '',
+        dateConsumed: body.dateConsumed || ''
     };
     inventory.push(newItem);
     res.status(201).json(newItem);
@@ -59,9 +69,14 @@ app.post('/api/inventory', (req, res) => {
 
 // PUT update item
 app.put('/api/inventory/:id', (req, res) => {
-    const item = inventory.find(i => i.id === parseInt(req.params.id));
+    const item = ownedItem(req);
     if (item) {
-        Object.assign(item, req.body);
+        const body = req.body || {};
+        for (const field of editableFields) {
+            if (Object.prototype.hasOwnProperty.call(body, field)) {
+                item[field] = body[field];
+            }
+        }
         res.json(item);
     } else {
         res.status(404).json({ message: 'Item not found' });
@@ -70,7 +85,9 @@ app.put('/api/inventory/:id', (req, res) => {
 
 // DELETE item
 app.delete('/api/inventory/:id', (req, res) => {
-    inventory = inventory.filter(i => i.id !== parseInt(req.params.id));
+    const item = ownedItem(req);
+    if (!item) return res.status(404).json({ message: 'Item not found' });
+    inventory = inventory.filter(candidate => candidate.id !== item.id);
     res.json({ message: 'Item deleted' });
 });
 
