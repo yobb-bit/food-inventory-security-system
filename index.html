@@ -41,7 +41,7 @@
 
                 <p class="menu-label">ACCOUNT</p>
 
-                <a href="login.html" class="nav-link">
+                <a href="login.html" class="nav-link" onclick="logout()">
                     <span>↪</span> Sign Out
                 </a>
             </div>
@@ -336,11 +336,19 @@
 
 
     <!-- API CLIENT -->
-    <script src="apiClient.js"></script>
+    <script src="apiCLient.js"></script>
 
     <script>
 
         const api = new APIClient("http://localhost:3000");
+
+        if (!api.token) {
+            window.location.replace("login.html");
+        }
+
+        function logout() {
+            api.clearToken();
+        }
 
         // STATUS MESSAGE
         function showMessage(message, success = true) {
@@ -348,6 +356,16 @@
 
             status.textContent = message;
             status.className = success ? "success-message" : "error-message";
+        }
+
+        function handleApiError(error, fallbackMessage) {
+            console.error(error);
+            if (error.status === 401) {
+                api.clearToken();
+                window.location.replace("login.html");
+                return;
+            }
+            showMessage(error.message || fallbackMessage, false);
         }
 
 
@@ -427,8 +445,7 @@
 
             } catch (error) {
 
-                console.error(error);
-                showMessage("Unable to load inventory. Check your server.", false);
+                handleApiError(error, "Unable to load inventory. Check your server.");
 
             }
 
@@ -473,8 +490,7 @@
 
             } catch (error) {
 
-                console.error(error);
-                showMessage("Unable to add inventory item.", false);
+                handleApiError(error, "Unable to add inventory item.");
 
             }
 
@@ -514,8 +530,7 @@
 
             } catch (error) {
 
-                console.error(error);
-                showMessage("Unable to update inventory item.", false);
+                handleApiError(error, "Unable to update inventory item.");
 
             }
 
@@ -548,15 +563,14 @@
 
             } catch (error) {
 
-                console.error(error);
-                showMessage("Unable to delete inventory item.", false);
+                handleApiError(error, "Unable to delete inventory item.");
 
             }
 
         }
 
         // LOAD INVENTORY WHEN PAGE OPENS
-        loadInventory();
+        if (api.token) loadInventory();
 
     </script>
 

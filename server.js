@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { login, authenticate } = require('./JWT');
 
 const app = express();
@@ -7,6 +8,19 @@ const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve only the UI files needed for local testing.
+const uiFiles = {
+    '/': 'login.html',
+    '/login.html': 'login.html',
+    '/index.html': 'index.html',
+    '/login.css': 'login.css',
+    '/style.css': 'style.css',
+    '/apiCLient.js': 'apiCLient.js'
+};
+for (const [route, filename] of Object.entries(uiFiles)) {
+    app.get(route, (req, res) => res.sendFile(path.join(__dirname, filename)));
+}
 
 // Login is public; inventory routes require a valid bearer token.
 app.post('/api/login', login);

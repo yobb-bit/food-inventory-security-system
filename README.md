@@ -5,6 +5,24 @@ Guys, I've already created the three security branches in our GitHub repository.
 **GitHub Repository:**  
 https://github.com/yobb-bit/food-inventory-security-system
 
+## Run the UI locally
+
+From the project directory, install dependencies and start the server:
+
+```bash
+npm install
+JWT_SECRET=local-dev-secret npm start
+```
+
+Open `http://localhost:3000/` and sign in with one of the demo accounts:
+
+| Username | Password |
+| --- | --- |
+| Owen | `admin123` |
+| Lester | `staff123` |
+
+The login page stores the JWT for the current browser tab and sends it with inventory requests.
+
 ## 1. Clone the repository
 
 ```bash
