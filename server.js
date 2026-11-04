@@ -39,11 +39,17 @@ app.get('/api/me', authenticate, (req, res) => {
 
 // Sample data — now with dateReceived and dateConsumed
 let inventory = [
-    { id: 1, owner_id: 1, name: 'Item 1', quantity: 10, price: 29.99, dateReceived: '2026-09-01', dateConsumed: '' },
-    { id: 2, owner_id: 2, name: 'Item 2', quantity: 5, price: 49.99, dateReceived: '2026-09-05', dateConsumed: '' }
+    { id: 1, owner_id: 1, supplier: 'Green Valley Farms', supplierCost: 18.50, name: 'Item 1', quantity: 10, price: 29.99, dateReceived: '2026-09-01', dateConsumed: '' },
+    { id: 2, owner_id: 2, supplier: 'Fresh Fields Co.', supplierCost: 32.25, name: 'Item 2', quantity: 5, price: 49.99, dateReceived: '2026-09-05', dateConsumed: '' }
 ];
 
-const editableFields = ['name', 'quantity', 'price', 'dateReceived', 'dateConsumed'];
+const editableFields = ['name', 'supplier', 'quantity', 'price', 'dateReceived', 'dateConsumed'];
+
+function parseSupplierCost(value) {
+    if (value === undefined || value === null || value === '') return null;
+    const cost = Number(value);
+    return Number.isFinite(cost) && cost >= 0 ? cost : NaN;
+}
 
 function findItem(req) {
     const id = Number(req.params.id);
@@ -65,9 +71,15 @@ app.get('/api/inventory/:id', (req, res) => {
 // POST new item
 app.post('/api/inventory', requireAdmin, (req, res) => {
     const body = req.body || {};
+    const supplierCost = parseSupplierCost(body.supplierCost);
+    if (Number.isNaN(supplierCost)) {
+        return res.status(400).json({ message: 'Supplier cost must be a non-negative number' });
+    }
     const newItem = {
         id: inventory.reduce((max, item) => Math.max(max, item.id), 0) + 1,
         owner_id: req.user.id,
+        supplier: typeof body.supplier === 'string' ? body.supplier.trim() : '',
+        supplierCost,
         name: body.name,
         quantity: body.quantity,
         price: body.price,
@@ -83,10 +95,23 @@ app.put('/api/inventory/:id', requireAdmin, (req, res) => {
     const item = findItem(req);
     if (item) {
         const body = req.body || {};
+        const supplierCost = Object.prototype.hasOwnProperty.call(body, 'supplierCost')
+            ? parseSupplierCost(body.supplierCost)
+            : item.supplierCost;
+        if (Number.isNaN(supplierCost)) {
+            return res.status(400).json({ message: 'Supplier cost must be a non-negative number' });
+        }
         for (const field of editableFields) {
             if (Object.prototype.hasOwnProperty.call(body, field)) {
-                item[field] = body[field];
+                if (field === 'supplier') {
+                    if (typeof body.supplier === 'string') item.supplier = body.supplier.trim();
+                } else {
+                    item[field] = body[field];
+                }
             }
+        }
+        if (Object.prototype.hasOwnProperty.call(body, 'supplierCost')) {
+            item.supplierCost = supplierCost;
         }
         res.json(item);
     } else {

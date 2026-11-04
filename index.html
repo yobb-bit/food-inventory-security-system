@@ -147,8 +147,10 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Product Name</th>
+                                <th>Supplier</th>
                                 <th>Quantity</th>
                                 <th>Price</th>
+                                <th>Supplier Cost / Unit</th>
                                 <th>Date Received</th>
                                 <th>Date Consumed</th>
                             </tr>
@@ -157,7 +159,7 @@
                         <tbody id="inventoryTableBody">
 
                             <tr>
-                                <td colspan="6" class="empty-state">
+                                <td colspan="8" class="empty-state">
                                     Click "Refresh Inventory" to load items.
                                 </td>
                             </tr>
@@ -206,6 +208,16 @@
                                min="0"
                                step="0.01"
                                placeholder="Enter price">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="supplierInput">Supplier</label>
+                        <input id="supplierInput" type="text" placeholder="Enter supplier name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="supplierCostInput">Supplier Cost per Unit</label>
+                        <input id="supplierCostInput" type="number" min="0" step="0.01" placeholder="Enter unit cost">
                     </div>
 
                     <div class="form-group">
@@ -270,6 +282,16 @@
                                min="0"
                                step="0.01"
                                placeholder="Enter new price">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="updateSupplier">Supplier</label>
+                        <input id="updateSupplier" type="text" placeholder="Enter supplier name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="updateSupplierCost">Supplier Cost per Unit</label>
+                        <input id="updateSupplierCost" type="number" min="0" step="0.01" placeholder="Enter unit cost">
                     </div>
 
                     <div class="form-group">
@@ -421,8 +443,10 @@
                     const values = [
                         "#" + item.id,
                         item.name,
+                        item.supplier || "N/A",
                         quantity + " pcs",
                         price.toFixed(2),
+                        item.supplierCost == null ? "N/A" : "$" + Number(item.supplierCost).toFixed(2),
                         item.dateReceived || "N/A",
                         item.dateConsumed || "N/A"
                     ];
@@ -446,7 +470,7 @@
                     const row = document.createElement("tr");
                     const cell = document.createElement("td");
 
-                    cell.colSpan = 6;
+                    cell.colSpan = 8;
                     cell.className = "empty-state";
                     cell.textContent = "No inventory items found.";
 
@@ -478,6 +502,8 @@
                 const name = document.getElementById("nameInput").value.trim();
                 const quantity = document.getElementById("quantityInput").value;
                 const price = document.getElementById("priceInput").value;
+                const supplier = document.getElementById("supplierInput").value.trim();
+                const supplierCost = document.getElementById("supplierCostInput").value;
                 const dateReceived = document.getElementById("dateReceivedInput").value;
                 const dateConsumed = document.getElementById("dateConsumedInput").value;
 
@@ -488,8 +514,10 @@
 
                 const item = {
                     name,
+                    supplier,
                     quantity: Number(quantity),
                     price: Number(price),
+                    supplierCost: supplierCost === "" ? null : Number(supplierCost),
                     dateReceived,
                     dateConsumed
                 };
@@ -499,6 +527,8 @@
                 document.getElementById("nameInput").value = "";
                 document.getElementById("quantityInput").value = "";
                 document.getElementById("priceInput").value = "";
+                document.getElementById("supplierInput").value = "";
+                document.getElementById("supplierCostInput").value = "";
                 document.getElementById("dateReceivedInput").value = "";
                 document.getElementById("dateConsumedInput").value = "";
 
@@ -524,6 +554,8 @@
                 const name = document.getElementById("updateName").value.trim();
                 const quantity = document.getElementById("updateQty").value;
                 const price = document.getElementById("updatePrice").value;
+                const supplier = document.getElementById("updateSupplier").value.trim();
+                const supplierCost = document.getElementById("updateSupplierCost").value;
                 const dateReceived = document.getElementById("updateDateReceived").value;
                 const dateConsumed = document.getElementById("updateDateConsumed").value;
 
@@ -534,8 +566,10 @@
 
                 const item = {
                     name,
+                    supplier,
                     quantity: Number(quantity),
                     price: Number(price),
+                    supplierCost: supplierCost === "" ? null : Number(supplierCost),
                     dateReceived,
                     dateConsumed
                 };
