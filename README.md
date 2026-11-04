@@ -23,6 +23,13 @@ Open `http://localhost:3000/` and sign in with one of the demo accounts:
 
 The login page stores the JWT for the current browser tab and sends it with inventory requests.
 
+### Inventory permissions
+
+- **Admin:** can view, add, update, and delete any inventory item.
+- **Staff:** can view all inventory items and low-stock totals, but cannot add, update, or delete items.
+
+The API enforces these permissions even if a caller bypasses the dashboard controls.
+
 ## 1. Clone the repository
 
 ```bash

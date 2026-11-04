@@ -35,7 +35,7 @@
                     <span>📦</span> Inventory
                 </a>
 
-                <a href="#add-item" class="nav-link">
+                <a href="#add-item" class="nav-link" data-admin-only>
                     <span>＋</span> Add Item
                 </a>
 
@@ -68,8 +68,8 @@
                 <div class="user-profile">
                     <div class="user-avatar">A</div>
                     <div>
-                        <strong>Administrator</strong>
-                        <small>Admin Account</small>
+                        <strong id="currentUsername">Account</strong>
+                        <small id="currentRole">User</small>
                     </div>
                 </div>
 
@@ -172,7 +172,7 @@
 
 
             <!-- ADD ITEM -->
-            <section id="add-item" class="content-card">
+            <section id="add-item" class="content-card" data-admin-only>
 
                 <div class="card-heading">
                     <div>
@@ -230,7 +230,7 @@
 
 
             <!-- UPDATE ITEM -->
-            <section class="content-card">
+            <section class="content-card" data-admin-only>
 
                 <div class="card-heading">
                     <div>
@@ -294,7 +294,7 @@
 
 
             <!-- DELETE ITEM -->
-            <section class="content-card delete-card">
+            <section class="content-card delete-card" data-admin-only>
 
                 <div class="card-heading">
                     <div>
@@ -366,6 +366,24 @@
                 return;
             }
             showMessage(error.message || fallbackMessage, false);
+        }
+
+        async function initializeDashboard() {
+            try {
+                const user = await api.get("/api/me");
+                document.getElementById("currentUsername").textContent = user.username;
+                document.getElementById("currentRole").textContent = `${user.role} account`;
+
+                if (user.role !== "admin") {
+                    document.querySelectorAll("[data-admin-only]").forEach(element => {
+                        element.hidden = true;
+                    });
+                }
+
+                await loadInventory();
+            } catch (error) {
+                handleApiError(error, "Unable to load your account.");
+            }
         }
 
 
@@ -570,7 +588,7 @@
         }
 
         // LOAD INVENTORY WHEN PAGE OPENS
-        if (api.token) loadInventory();
+        if (api.token) initializeDashboard();
 
     </script>
 

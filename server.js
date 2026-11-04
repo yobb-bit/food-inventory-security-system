@@ -26,6 +26,17 @@ for (const [route, filename] of Object.entries(uiFiles)) {
 app.post('/api/login', login);
 app.use('/api/inventory', authenticate);
 
+function requireAdmin(req, res, next) {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+    }
+    return next();
+}
+
+app.get('/api/me', authenticate, (req, res) => {
+    res.json({ id: req.user.id, username: req.user.username, role: req.user.role });
+});
+
 // Sample data — now with dateReceived and dateConsumed
 let inventory = [
     { id: 1, owner_id: 1, name: 'Item 1', quantity: 10, price: 29.99, dateReceived: '2026-09-01', dateConsumed: '' },
@@ -34,25 +45,25 @@ let inventory = [
 
 const editableFields = ['name', 'quantity', 'price', 'dateReceived', 'dateConsumed'];
 
-function ownedItem(req) {
+function findItem(req) {
     const id = Number(req.params.id);
     if (!Number.isSafeInteger(id)) return undefined;
-    return inventory.find(item => item.id === id && String(item.owner_id) === String(req.user.id));
+    return inventory.find(item => item.id === id);
 }
 
 // GET all items
 app.get('/api/inventory', (req, res) => {
-    res.json(inventory.filter(item => String(item.owner_id) === String(req.user.id)));
+    res.json(inventory);
 });
 
 // GET item by ID
 app.get('/api/inventory/:id', (req, res) => {
-    const item = ownedItem(req);
+    const item = findItem(req);
     item ? res.json(item) : res.status(404).json({ message: 'Item not found' });
 });
 
 // POST new item
-app.post('/api/inventory', (req, res) => {
+app.post('/api/inventory', requireAdmin, (req, res) => {
     const body = req.body || {};
     const newItem = {
         id: inventory.reduce((max, item) => Math.max(max, item.id), 0) + 1,
@@ -68,8 +79,8 @@ app.post('/api/inventory', (req, res) => {
 });
 
 // PUT update item
-app.put('/api/inventory/:id', (req, res) => {
-    const item = ownedItem(req);
+app.put('/api/inventory/:id', requireAdmin, (req, res) => {
+    const item = findItem(req);
     if (item) {
         const body = req.body || {};
         for (const field of editableFields) {
@@ -84,8 +95,8 @@ app.put('/api/inventory/:id', (req, res) => {
 });
 
 // DELETE item
-app.delete('/api/inventory/:id', (req, res) => {
-    const item = ownedItem(req);
+app.delete('/api/inventory/:id', requireAdmin, (req, res) => {
+    const item = findItem(req);
     if (!item) return res.status(404).json({ message: 'Item not found' });
     inventory = inventory.filter(candidate => candidate.id !== item.id);
     res.json({ message: 'Item deleted' });
