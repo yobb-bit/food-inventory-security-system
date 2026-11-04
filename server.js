@@ -1,11 +1,16 @@
 const express = require('express');
 const cors = require('cors');
+const { login, authenticate } = require('./JWT');
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Login is public; inventory routes require a valid bearer token.
+app.post('/api/login', login);
+app.use('/api/inventory', authenticate);
 
 // Sample data — now with dateReceived and dateConsumed
 let inventory = [
