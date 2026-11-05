@@ -121,6 +121,27 @@ body {
 
     font-size: 14px;
     outline: none;
+
+    /* Smooth animation */
+    transition: 
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        border-color 0.25s ease;
+
+    transform-origin: center;
+}
+
+/* Hover animation */
+.form-group input:hover {
+    transform: scale(1.02);
+    border-color: #218653;
+    box-shadow: 0 5px 15px rgba(33, 134, 83, 0.12);
+}
+
+.form-group input:focus {
+    transform: scale(1.02);
+    border-color: #218653;
+    box-shadow: 0 0 0 3px rgba(33,134,83,0.1);
 }
 
 .form-group input:focus {
@@ -164,10 +185,24 @@ body {
     font-weight: bold;
 
     cursor: pointer;
+
+    /* Smooth animation */
+    transition:
+        transform 0.25s ease,
+        background 0.25s ease,
+        box-shadow 0.25s ease;
 }
 
+/* Hover animation */
 .login-button:hover {
     background: #176b45;
+    transform: scale(1.03);
+    box-shadow: 0 6px 16px rgba(23, 107, 69, 0.25);
+}
+
+/* Click animation */
+.login-button:active {
+    transform: scale(0.98);
 }
 
 /* FOOTER */
