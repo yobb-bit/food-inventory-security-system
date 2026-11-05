@@ -29,6 +29,7 @@ Open `http://localhost:3000/` and sign in with one of the demo accounts:
 | Owen | `admin123` |
 | Lester | `staff123` |
 | Axel | `finance123` |
+| John | `finance1234` |
 
 The login page stores the JWT for the current browser tab and sends it with inventory requests.
 
@@ -39,6 +40,10 @@ The login page stores the JWT for the current browser tab and sends it with inve
 - **Finance:** can view supplier names/costs only for suppliers an admin has shared with that account.
 
 The API enforces these permissions even if a caller bypasses the dashboard controls. Supplier grants are in-memory for this local demo and reset when the server restarts.
+
+### Demonstrate the supplier object access check
+
+The demo starts with Axel granted access to both Fish Supplier and Dairy Supplier. John is granted access to Fish Supplier only. Sign in as John and request `GET /api/suppliers/Dairy%20Supplier` with John's bearer token. The API returns `404 Supplier not found` because John is not authorized for that supplier. Sign in as Axel and request the same URL; it returns the supplier details. This shows the server checking authorization for the specific supplier object, even when a user changes the requested supplier in the URL.
 
 ## 1. Clone the repository
 
