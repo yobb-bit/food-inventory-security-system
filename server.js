@@ -33,8 +33,13 @@ let inventory = [
     { id: 2, owner_id: 2, supplier: 'Dairy Supplier', supplierCost: 32.25, name: 'Item 2', quantity: 5, price: 49.99, dateReceived: '2026-09-05', dateConsumed: '' }
 ];
 
-let supplierAccessGrants = [];
-let nextSupplierGrantId = 1;
+// Demo grants: Axel can view both suppliers; John can view Fish Supplier only.
+let supplierAccessGrants = [
+    { id: 1, userId: 3, supplierKey: 'fish supplier', supplierName: 'Fish Supplier' },
+    { id: 2, userId: 3, supplierKey: 'dairy supplier', supplierName: 'Dairy Supplier' },
+    { id: 3, userId: 4, supplierKey: 'fish supplier', supplierName: 'Fish Supplier' }
+];
+let nextSupplierGrantId = 4;
 
 const editableFields = ['name', 'supplier', 'quantity', 'price', 'dateReceived', 'dateConsumed'];
 const requireAdmin = authorizeRoles(ROLES.ADMIN);

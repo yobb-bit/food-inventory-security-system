@@ -8,7 +8,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 const users = [
     { id: 1, username: 'Owen', password: bcrypt.hashSync('admin123', 10), role: 'admin' },
     { id: 2, username: 'Lester', password: bcrypt.hashSync('staff123', 10), role: 'staff' },
-    { id: 3, username: 'Axel', password: bcrypt.hashSync('finance123', 10), role: 'finance' }
+    { id: 3, username: 'Axel', password: bcrypt.hashSync('finance123', 10), role: 'finance' },
+    { id: 4, username: 'John', password: bcrypt.hashSync('finance1234', 10), role: 'finance' }
 ];
 
 function login(req, res) {
